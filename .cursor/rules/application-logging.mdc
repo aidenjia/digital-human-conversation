@@ -1,0 +1,103 @@
+---
+description: 应用日志策略（stdout、结构化、脱敏、ConvoAI 关键节点）
+globs: src/main/java/**/*.java,src/main/resources/application*.yml
+alwaysApply: false
+---
+
+# 应用日志策略
+
+权威规格：`openspec/specs/application-logging/spec.md`（stdout 为主路径）。与 agent 项目对齐：**关键节点可观测、噪声可控、生产可检索、敏感信息不出日志**。
+
+本服务为 **ConvoAI HTTP 网关**（同步请求、无 WS/Reactor 长链路），链路比 agent 短；关联字段以 `deviceId` / `channel` / `userId` / `agentId` 为主。
+
+## 基础设施
+
+| 组件 | 约定 |
+|------|------|
+| 输出目标 | **仅标准输出**（stdout）；禁止新增 `RollingFileAppender`、禁止依赖容器内 `/app/logs` 文件作为主路径 |
+| 采集 | Docker / K8s 侧采集 stdout；见 `README.md`、`openspec/specs/docker-container-runtime` |
+| 结构化格式 | **全环境**（含 prod）：`logging.structured.format.console: logstash` + `include: [mdc, request]`（见 `application.yml`） |
+| prod | 保持 stdout + logstash；业务包级别**不**在 prod 重复配置，继承 base 的 `con.aidenjia.digitalhuman.conversation: INFO`；仅另设 `org.springframework.web: WARN`；**不**长期开业务包 DEBUG |
+| Logger | `private static final Logger log = LoggerFactory.getLogger(Xxx.class)`；禁止字段 `@Slf4j` 与静态 logger 混用同一类 |
+| 业务包级别 | `con.aidenjia.digitalhuman.conversation`（注意无 `.human.` 分段；勿写父包 `con.aidenjia.digitalhuman`） |
+
+无自定义 `logback-spring.xml` 时遵循 Spring Boot 默认 + 上述 `application*.yml`；若日后新增 logback 配置，根 logger **只**挂 CONSOLE。
+
+## 关联字段（MDC 与消息体）
+
+**目标**：按一次 ConvoAI 会话串联 join → 上游调用 → leave。
+
+| 字段 | MDC 键 | 写入时机 |
+|------|--------|----------|
+| `deviceId` | `deviceId` | `ConvoaiMdcFilter`（join body）/ `ConvoaiService` 兜底 |
+| `digitalHumanType` | `digitalHumanType` | 同上 |
+| `channel` | `channel` | `ConvoaiService.enrichAfterJoin` |
+| `userId` | `userId` | 同上 |
+| `agentId` | `agentId` | Filter（leave body）或 join 上游成功后 enrich |
+
+**实现**：`security.ConvoaiMdcFilter`（仅 `/api/convoai/**`，order +12，鉴权后）+ `trtc.support.ConvoaiLogContext`（唯一 MDC 写入点）。请求结束 `finally` 中 `MDC.clear()`。
+
+MDC 已有时，INFO 日志**勿**在消息体重复 `deviceId=` 等字段；保留 `ConvoAI join requested` / `ConvoAI leave requested` 生命周期句即可。
+
+Spring Boot `logging.structured.include: request` 已输出 HTTP 方法/路径；鉴权失败**不**记录 Bearer 原文。
+
+## 级别
+
+| 级别 | 用途 |
+|------|------|
+| **INFO** | 业务生命周期：join/leave 请求、上游 join 成功、关停无关的对外可观测节点 |
+| **DEBUG** | 排障细节：上游 REST URL、**禁止**在 prod 长期开启；join 请求体仅本地临时排查 |
+| **WARN** | 可恢复：上游 HTTP 非 2xx（截断 body）、leave 失败、配置类降级 |
+| **ERROR** | 不可恢复：`ApiException` code≥500、`GlobalExceptionHandler` 未预期异常（带栈） |
+
+校验失败（400）默认**不打** ERROR；客户端参数错误不必污染 ERROR 指标。
+
+## 消息格式
+
+- 句首英文事件短语 + `key=value` 空格分隔，例：`ConvoAI join requested deviceId=... channel=...`
+- 错误：`log.error("语义说明 key={} ...", value, ex)`，语义在前，异常作最后参数
+- 上游失败：`httpStatus={}` + **截断** `body`（≤ 500 字符），禁止整段粘贴可能含 token 的响应
+
+## 关键节点清单（必须有日志）
+
+| 阶段 | 级别 | 事件 / 字段 | 负责类 |
+|------|------|-------------|--------|
+| join 收到请求 | INFO | `ConvoAI join requested`（关联字段在 MDC） | `ConvoaiService` |
+| join 上游成功 | INFO | `ConvoAI REST join succeeded` + `agentId` + `status` | `AgoraRestClient` |
+| join 上游失败 | WARN | `ConvoAI REST join failed` + `httpStatus` + 截断 `body` | `AgoraRestClient` |
+| leave 收到请求 | INFO | `ConvoAI leave requested`（`agentId` 在 MDC） | `ConvoaiService` |
+| leave 上游失败 | WARN | `ConvoAI leave failed` | `ConvoaiService` |
+| leave 上游失败详情 | WARN | `ConvoAI REST leave failed` + `httpStatus` + 截断 `body` | `AgoraRestClient` |
+| session warm | INFO/WARN | `session warm requested/succeeded/failed` | `AgentSessionWarmClient` |
+| API 5xx | ERROR | `API error` + `code` + `message` | `GlobalExceptionHandler` |
+| 防连点抢锁失败 | WARN | `Lock acquisition failed` + `key` + `method` | `ApiLockFailureStrategy`（兜底：`GlobalExceptionHandler`） |
+
+新增 ConvoAI 能力时，先在本表补一行再写代码。
+
+## 脱敏（禁止出现在任何级别）
+
+| 禁止输出 | 说明 |
+|----------|------|
+| 完整 RTC Token / UserSig | join 响应 `token`、上游 body 内 `token` |
+| `Authorization` / Bearer / access token | 鉴权头全文 |
+| `CONVOAI_LLM_API_KEY`、TTS `secret_*` | LLM / TTS 密钥 |
+| join 请求体全文（INFO/WARN） | 含 `api_key`、`token`、TTS 凭证；DEBUG 仅本地临时、prod 禁止开 DEBUG |
+| 完整上游成功响应 JSON | 仅记录 `agentId`、`status` 等非敏感字段 |
+
+允许：`appId`、`channel`、`deviceId`、`userId`、`agentId`、`taskId`（若将来有）、`httpStatus`、截断错误摘要。
+
+## 禁止事项
+
+- 禁止 `log.info("{}", joinBodyMap)` 或 `log.debug` 打印未脱敏 join body 到共享环境
+- 禁止为每个 Filter / 健康检查打 INFO（噪声）
+- 禁止在日志中用 `userId:{},deviceId:{}` 逗号拼接替代 `key=value`（与 agent 一致，便于检索）
+- 禁止恢复文件日志卷、`logging.file.path` 驱动的主路径写文件
+- 禁止把框架 DEBUG（`org.springframework` 全量）长期开在 prod
+
+## 新增 / 修改代码检查项
+
+1. INFO 是否只标记生命周期，没有把排障细节升 INFO？
+2. 是否避免记录 token、api_key、Bearer？
+3. 上游错误是否带 `httpStatus` / `agentId` 等可定位字段？
+4. WARN 是否用于可恢复、ERROR 是否仅用于 5xx / 未处理异常？
+5. `application*.yml` 中业务 logger 包名是否为 `con.aidenjia.digitalhuman.conversation`（与 base 一致；prod 勿再写父包覆盖）？

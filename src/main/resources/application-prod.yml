@@ -1,0 +1,25 @@
+# prod profile（mvn spring-boot:run -Pprod 或 --spring.profiles.active=prod）
+spring:
+  application:
+    name: digital-human-conversation
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+logging:
+  level:
+    # 业务级别与 base 相同；仅收紧 Web 框架噪音
+    org.springframework.web: WARN
+# 不向客户端暴露异常明细（仍由服务端日志记录）
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+
+management:
+  metrics:
+    tags:
+      env: ${METRICS_ENV:prod}
+
+api:
+  security:
+    demo-token-enabled: false
+    demo-token: ""

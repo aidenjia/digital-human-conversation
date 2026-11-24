@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "primaryTransport": "webrtc",
+  "attempts": [
+    {
+      "name": "shake_head",
+      "attempt": 1,
+      "jobId": "d0cd961a-40ee-409f-b90c-186e2d0d6bca",
+      "duration": 3,
+      "prompt": "Stand with feet planted and arms relaxed. Gently shake the head no twice, then face forward and return to rest.",
+      "generationStatus": "DONE",
+      "acceptance": "REJECTED",
+      "reason": "Combined head/neck yaw stays about 4 to 31 degrees on one side; browser preview also shows arms drawn behind the body. Does not meet alternating left/right head shake.",
+      "sourcePath": "data/motion/d0cd961a-40ee-409f-b90c-186e2d0d6bca.fbx",
+      "frames": 90,
+      "trackCount": 13,
+      "durationSeconds": 2.9666666984558105,
+      "semanticEnabled": false
+    },
+    {
+      "name": "shake_head",
+      "attempt": 2,
+      "jobId": "4475eaf9-6348-4135-ad2f-906b1145e3f6",
+      "duration": 3,
+      "prompt": "Face forward, arms hanging at sides, feet still. Turn head left, right, left, right to say no, then face forward.",
+      "generationStatus": "DONE",
+      "acceptance": "PREVIEW",
+      "sourcePath": "data/motion/4475eaf9-6348-4135-ad2f-906b1145e3f6.fbx",
+      "exportPath": "public/animations/shake_head.motion.json",
+      "exportProfile": "--head-only",
+      "adaptation": "Source window 0.35-2.4 seconds retimed to 1.35 seconds after user feedback. Updated Chrome preview replayed; user subjective acceptance pending.",
+      "frames": 42,
+      "trackCount": 2,
+      "durationSeconds": 1.35,
+      "semanticEnabled": false
+    },
+    {
+      "name": "explain",
+      "attempt": 1,
+      "jobId": "41668085-99ec-4346-806b-81451858f549",
+      "duration": 4,
+      "prompt": "Stand with feet planted. Open both hands at waist height, palms up, gently explain, then lower both arms to rest.",
+      "generationStatus": "DONE",
+      "acceptance": "PREVIEW",
+      "sourcePath": "data/motion/41668085-99ec-4346-806b-81451858f549.fbx",
+      "exportPath": "public/animations/explain.motion.json",
+      "frames": 120,
+      "trackCount": 11,
+      "durationSeconds": 3.9666666984558105,
+      "visualEvidence": "User preferred natural neutral forearms but reported lowering still crossed the dress. Actual skinned-triangle tests reproduced crossings around 2.02-2.12s; original idle hand points were inside the skirt. Default dress now uses a 0.22rad forward upper-arm inclination, unchanged lateral angle and neutral forearms; imported models are unaffected. Explanation bakes back to this forward endpoint. 57 frontend tests, lint and build pass, including 60Hz hand/finger-segment triangle intersections and 8mm idle point clearance. Not whole-hand skin-volume collision validation. Chrome WebRTC front/side lowering and idle poses sampled. Final subjective acceptance pending.",
+      "semanticEnabled": false
+    }
+  ]
+}

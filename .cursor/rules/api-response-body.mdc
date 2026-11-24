@@ -1,0 +1,114 @@
+---
+description: Unified API response body (code, success, message, data, error) and result shapes
+alwaysApply: false
+---
+# API Response Body
+
+All API responses use a single envelope so clients, gateways, and monitoring can handle success and errors consistently.
+
+## Base fields
+
+Every response must include:
+
+| Field     | Type    | Required | Description                          |
+|-----------|---------|----------|--------------------------------------|
+| `code`    | integer | Yes      | Business status code                 |
+| `success` | boolean | Yes      | Whether the request succeeded        |
+| `message` | string  | No       | Error text or supplemental info      |
+| `data`    | any     | No       | Payload                              |
+| `error`   | any     | No       | Structured error detail              |
+
+Omit optional fields when empty (`message`, `data`, `error`).
+
+## 1. Base result
+
+Use when there is no payload—only success/failure.
+
+```bash
+curl -X GET 'https://localhost:44371/api/example/base-result' -H 'accept: */*'
+```
+
+```json
+{ "code": 200, "success": true }
+```
+
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "BaseResultDto sample"
+}
+```
+
+## 2. Error result
+
+Use for validation failures, business exceptions, and other expected errors.
+
+```bash
+curl -X GET 'https://localhost:44371/api/example/base-result-with-error' -H 'accept: */*'
+```
+
+```json
+{
+  "code": 4000,
+  "success": false,
+  "message": "BaseResultDto sample with error",
+  "error": {
+    "field": "name",
+    "reason": "required"
+  }
+}
+```
+
+Set `success: false`; use a non-success `code` (e.g. `4000`, not `200`).
+
+## 3. Single object
+
+`data` is one object.
+
+```json
+{
+  "data": { "id": 1, "name": "Alpha" },
+  "code": 200,
+  "success": true
+}
+```
+
+## 4. List (no pagination)
+
+`data` is an array.
+
+```json
+{
+  "data": ["Alpha", "Beta", "Gamma"],
+  "code": 200,
+  "success": true
+}
+```
+
+## 5. Paged result
+
+`data` wraps items and total count:
+
+```json
+{
+  "data": {
+    "items": [
+      { "id": 1, "name": "Alpha" },
+      { "id": 2, "name": "Beta" }
+    ],
+    "totalCount": 2
+  },
+  "code": 200,
+  "success": true
+}
+```
+
+## Requirements
+
+**Servers**
+- Use app level response codes for `code` (e.g. `200` success, `4000` general failure).
+- Do not return raw domain objects without the envelope.
+
+**Clients**
+- Check `success` and `code`; read payload from `data`; use `message` / `error` for failures.

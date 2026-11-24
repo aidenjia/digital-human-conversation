@@ -1,0 +1,9 @@
+# 集群 test 部署：SPRING_PROFILES_ACTIVE=test。
+# 本地 mvn test / IT 以 src/test/resources/application-test.yml 为准（会遮盖本文件同名配置）。
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 3s
+management:
+  metrics:
+    tags:
+      env: ${METRICS_ENV:test}

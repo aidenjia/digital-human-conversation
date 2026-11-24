@@ -1,0 +1,8 @@
+# dev profile（K8s：SPRING_PROFILES_ACTIVE=dev；敏感项由 K8s 注入，Jasypt ENC 仅用于 local）
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 3s
+management:
+  metrics:
+    tags:
+      env: ${METRICS_ENV:dev}

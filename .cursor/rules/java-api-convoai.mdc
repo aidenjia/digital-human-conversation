@@ -1,0 +1,38 @@
+---
+description: Java API 层与 ConvoAI 业务编码规范
+globs: src/main/java/**/*.java
+alwaysApply: false
+---
+
+# API 与 ConvoAI 编码规范
+
+权威契约见 `README.md` 与 `openspec/specs/voice-api-surface/spec.md`。
+
+- 业务 Controller 显式声明 `/api/...`；禁止 context-path 和 URL 版本号前缀。
+- 当前全部接口隐式 v1，不传 `X-Api-Version`；`MULTI_VERSION_PATHS` 为空。不要恢复已删除的 Echo 示例端点。
+- `/api/**` 使用 `ApiResponse` 信封，Bearer Users JWT 鉴权；`X-Api-Culture` 为 en/zh，响应有 `Content-Language`。
+- 根探活与 Actuator 不放 `/api` 前缀；共通规则见 `api-*.mdc`、`application-logging.mdc`。
+
+## 唯一允许的业务接口
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| POST | `/api/convoai/agents` | 声网 join，body 为 deviceId、digitalHumanType、可选 timezone |
+| DELETE | `/api/convoai/agents` | 声网 leave，body 为 agentId |
+| POST | `/api/rtc/credentials` | RTC 凭据 |
+| POST | `/api/bailian/realtime/webrtc` | SDP 交换和一次性事件票据 |
+
+保留 `WS /ws/bailian/realtime-events` 作为 WebRTC 控制通道；音频走浏览器 RTP，不通过此 WS 中继。
+
+## 声网实现约束
+
+- `userId` 来自 JWT sub；`digitalHumanType` 仍传递给下游，但所有类型统一使用 yml 默认画像。不查任何用户业务配置或关系数据库。
+- `ConvoaiService` 编排，`ConvoaiJoinBodyAssembler` 构造请求，`AgoraRestClient` 调用声网 REST v2.6；不要在 Controller 创建 HTTP 客户端。
+- join 按用户使用进程内互斥，重复请求立即返回 409，finally 释放；成功 join 后 best-effort warm 不改变 join 结果。
+- leave 校验内存中的用户归属，不允许停止他人的 Agent；归属过期或重启丢失时返回 404。
+- 仅支持单进程单副本；WebRTC 票据 60 秒过期，原子消费一次，异用户不消费。不要引入外部缓存或分布式锁。
+- 保留 Tencent credentials 供声网 TTS vendor 使用，不恢复独立 VRS/TTS/COS SDK 或试听接口。
+- `trtc` 是历史包名，仅承载声网用例；新请求 DTO 放 `api/convoai/dto`，command 放 `trtc/command`，构造器支持放 `trtc/support`。
+- 配置与上游错误用现有异常类型和统一映射，不吞掉上游错误，不在日志输出 JWT、永久 API key、完整 SDP 或音频。
+
+接口增删应同时更新白名单测试、当前规格与 README。

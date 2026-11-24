@@ -1,0 +1,64 @@
+---
+description: API versioning via X-Api-Version header (not URL path); api-supported-versions on multi-version endpoints
+alwaysApply: false
+---
+# API Versioning
+
+API versions are selected with a request header, not URL path segments.
+
+## Request header
+
+| Header            | Value        |
+|-------------------|--------------|
+| `X-Api-Version`   | `<version>`  |
+
+Use when calling an endpoint that has multiple supported versions.
+
+```bash
+curl -X POST 'https://api.example.com/api/mobile-frame/send-photo-to-playlist' \
+  -H 'accept: */*' \
+  -H 'X-Api-Version: 2' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "sourceType": "meshy",
+    "meshyMetadataId": 1
+  }'
+```
+
+## Default version
+
+- By default, APIs do not require a version header.
+- If an endpoint has only one version:
+  - Clients should not send `X-Api-Version`.
+  - Servers should not return version metadata in the response.
+
+## Response header (multi-version only)
+
+For endpoints with multiple supported versions, the server must return:
+
+| Header                   | Value              |
+|--------------------------|--------------------|
+| `api-supported-versions` | `<v1>,<v2>,...`    |
+
+Example: `api-supported-versions: 1.0,2.0`
+
+Omit this header when the endpoint has a single version.
+
+## Versioning principles
+
+- Do not put version numbers in the URL path.
+- Breaking changes require a new API version.
+- Non-breaking changes must not introduce a new version.
+- Version number uses simple numbers, can use integer and decimal
+
+## Requirements
+
+**Clients**
+- Omit `X-Api-Version` for single-version endpoints.
+- Send `X-Api-Version` when targeting a specific version of a multi-version endpoint.
+
+**Servers**
+- Route and implement behavior from `X-Api-Version` when multiple versions exist; use the default version when the header is absent (per product default).
+- Return `api-supported-versions` only for multi-version endpoints.
+- Keep version out of route templates (`/api/v{n}/...` is not allowed).

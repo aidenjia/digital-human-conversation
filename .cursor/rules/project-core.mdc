@@ -1,0 +1,47 @@
+---
+description: 项目核心原则：分层、Clean Code、安全与变更纪律（始终生效）
+alwaysApply: true
+---
+
+# digital-human-conversation 核心规范
+
+权威参考：`README.md`、`openspec/specs/`、`docs/openspec-superspec-usage.md`。代码变更须与 README 对外契约一致。
+
+## 架构与依赖方向（OOP / 分层）
+
+单模块 Spring Boot，按**职责分包**，依赖只能**向内**：
+
+```
+api → trtc → infrastructure
+         ↘ config / exception / security（横切）
+```
+
+| 包 | 职责 | 禁止 |
+|----|------|------|
+| `api` | HTTP 适配：校验、映射、返回信封 | 直接调 SDK / 上游 REST；写业务编排 |
+| `trtc` | ConvoAI 用例编排、command、共享支撑 | 依赖 Servlet API；重复 Token/校验/SDK 模板 |
+| `infrastructure` | 声网 REST / SDK、外部 I/O | 暴露 REST；含 HTTP 语义 |
+| `config` / `security` / `exception` | 配置、鉴权、统一错误 | 业务分支逻辑 |
+
+`trtc` 为历史包名，当前仅承载 ConvoAI 编排。新增能力时**先定归属包**，再写代码；禁止为了“方便”把 DTO 放进 `trtc` 或把 Client 放进 Service 文件。
+
+## Clean Code 纪律
+
+1. **Controller 保持薄**：校验入参 → 构造 `command` → 调 Service → `ApiResponse.ok`。不写 SDK / REST body 组装。
+2. **Service 只做编排**：校验 → 组装请求 → `AgoraRestClient.join` / `AgoraRestClient.leave` → 返回 `ConvoaiJoinCredentials` 或 `LeaveConvoaiResult`；共享逻辑放 `trtc.support`。
+3. **命令与 DTO 分离**：HTTP 入参在 `api.convoai.dto`；Service 入参在 `trtc.command`。
+4. **单一响应模型**：join 成功统一返回 `ConvoaiJoinCredentials`，不新增同构 DTO。
+5. **构造器注入**：不用字段 `@Autowired`；依赖通过 `final` 字段 + 构造函数。
+6. **最小 diff**：只改任务相关文件；不顺手重构、不引入 YAGNI 抽象（如 Repository 接口层、多余 Helper）。
+7. **配置外置**：密钥/TTL 走 `*Properties` + 环境变量，禁止硬编码 secret 或 magic string。
+8. **注释**：只解释非显而易见的业务或技术约束；代码应自解释。
+
+## 安全与日志
+
+- 禁止提交 `.env.local`、API Key、RTC Token 全文到 Git。
+- 日志脱敏与关键节点见 **`.cursor/rules/application-logging.mdc`**（stdout、结构化、禁止 token/密钥进日志）。
+
+## 变更完成前
+
+- 运行 `mvn verify`；涉及 API / ConvoAI 行为时更新 `README.md`。
+- 非平凡功能走 **Superspec** 流程（见 `docs/openspec-superspec-usage.md`）；行为级变更归档后合并 `openspec/specs/`。

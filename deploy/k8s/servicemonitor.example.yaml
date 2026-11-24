@@ -1,0 +1,17 @@
+# EXAMPLE ONLY — align metadata.namespace, metadata.labels, and spec.selector
+# with the cluster Service. Not applied by CI.
+# Prometheus scrapes ClusterIP (not public Ingress). Path shares app port 8080.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: digital-human-conversation
+  labels:
+    app: digital-human-conversation
+spec:
+  selector:
+    matchLabels:
+      app: digital-human-conversation
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s

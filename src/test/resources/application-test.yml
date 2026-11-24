@@ -1,0 +1,18 @@
+api:
+  security:
+    issuer-uri: https://test-issuer/
+    jwk-set-uri: https://test-issuer/.well-known/jwks
+    # 演示旁路：仅在测试中开启，切片测试可按需关闭
+    demo-token-enabled: true
+    demo-token: demo-token-for-tests
+    demo-user-id: demo-ue5
+
+management:
+  metrics:
+    tags:
+      env: ${METRICS_ENV:test}
+
+tencent:
+  credentials:
+    secret-id: test-secret-id
+    secret-key: test-secret-key

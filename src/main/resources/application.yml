@@ -1,0 +1,165 @@
+# 未显式设置 spring.profiles.active 时使用 local。
+# 生产/容器请设置 SPRING_PROFILES_ACTIVE=prod（或 --spring.profiles.active=prod），会覆盖本默认值。
+# IDEA：若「Active profiles」未传入 JVM，可改用 VM options：-Dspring.profiles.active=local
+spring:
+  application:
+    name: digital-human-conversation
+  profiles:
+    default: local
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+  mvc:
+    problemdetails:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
+# 日志：标准输出；全环境 structured logstash（含 prod），便于 K8s 采集
+logging:
+  structured:
+    format:
+      console: logstash
+    include: [mdc, request]
+  level:
+    org.springframework: INFO
+    con.aidenjia.digitalhuman.conversation: INFO
+
+# 百炼 Realtime：WebRTC 信令与控制会话，凭据由运行环境注入。
+bailian:
+  realtime:
+    api-key: ${DASHSCOPE_API_KEY:}
+    workspace-id: ${BAILIAN_WORKSPACE_ID:}
+    # 人设与口播规则不在此配置：RealtimePersonaPrompts + prompts/realtime-session-rules.md
+    greeting-enabled: ${BAILIAN_REALTIME_GREETING_ENABLED:true}
+    greeting-text: ${BAILIAN_REALTIME_GREETING_TEXT:你好，有什么想聊的吗}
+    turn-detection-type: ${BAILIAN_REALTIME_TURN_DETECTION:smart_turn}
+    max-history-turns: ${BAILIAN_REALTIME_MAX_HISTORY_TURNS:30}
+    enable-search: ${BAILIAN_REALTIME_ENABLE_SEARCH:false}
+    heartbeat-interval-seconds: ${BAILIAN_REALTIME_HEARTBEAT_INTERVAL_SECONDS:15}
+    idle-timeout-seconds: ${BAILIAN_REALTIME_IDLE_TIMEOUT_SECONDS:60}
+    drain-grace-seconds: ${BAILIAN_REALTIME_DRAIN_GRACE_SECONDS:15}
+
+# 声网对话式 AI 引擎（ConvoAI）：join / leave 经 OkHttp REST；LLM 仅传 url + api-key；TTS 使用声网内置 Tencent vendor
+convoai:
+  app-id: ${CONVOAI_APP_ID:}
+  username: ${CONVOAI_USERNAME:}
+  password: ${CONVOAI_PASSWORD:}
+  domain-area: ${CONVOAI_DOMAIN_AREA:CN}
+  server-region: ${CONVOAI_SERVER_REGION:CHINESE_MAINLAND}
+  rtc:
+    app-certificate: ${CONVOAI_RTC_APP_CERTIFICATE:}
+  # LLM（custom，OpenAI 协议）：仅 url 与 api-key 传给上游。
+  llm:
+    url: ${CONVOAI_LLM_URL:}
+    api-key: ${CONVOAI_LLM_API_KEY:}
+    # 声网侧短期记忆条数；长对话历史由 agent conversationId 维护，默认 1
+    max-history: ${CONVOAI_LLM_MAX_HISTORY:1}
+  silence-timeout-ms: 20000
+  silence-action: speak
+  # 空闲超时（秒）：频道空闲后智能体自动退出；默认 5 分钟
+  idle-timeout: 300
+  # join 成功后内存 agent 归属 TTL（秒）；leave 校验用；默认 1 天，应 ≥ idle-timeout
+  agent-ownership-ttl-seconds: ${CONVOAI_AGENT_OWNERSHIP_TTL_SECONDS:86400}
+  # join 成功后同步调用 agent session warm（失败不挡 join）
+  session-warm:
+    enabled: ${CONVOAI_SESSION_WARM_ENABLED:true}
+    timeout-ms: ${CONVOAI_SESSION_WARM_TIMEOUT_MS:5000}
+    url: ${CONVOAI_SESSION_WARM_URL:}
+  # 开口打断（v2.6 interruption.mode=start_of_speech）
+  interruption:
+    enable: true
+    mode: start_of_speech
+  # 轮次检测：SoS/EoS 均为 vad；阈值兼顾降噪误打断与响应速度
+  turn-detection:
+    speech-threshold: 0.5
+    interrupt-duration-ms: 160
+    speaking-interrupt-duration-ms: 280
+    prefix-padding-ms: 800
+    silence-duration-ms: 320
+  parameters:
+    audio-scenario: aiserver
+  # ASR：language 由音色语言推导；vendor 空则上游凤鸣
+  asr:
+    vendor: ${CONVOAI_ASR_VENDOR:}
+  # TTS：声网 ConvoAI 内置腾讯云 vendor（密钥见 tencent.credentials）
+  tts:
+    app-id: ${CONVOAI_TTS_APP_ID:}
+    emotion-category: ${CONVOAI_TTS_EMOTION_CATEGORY:happy}
+    emotion-intensity: ${CONVOAI_TTS_EMOTION_INTENSITY:100}
+    sample-rate: ${CONVOAI_TTS_SAMPLE_RATE:24000}
+
+digital-human:
+  avatar-decision:
+    enabled: ${AVATAR_DECISION_ENABLED:true}
+    api-key: ${AVATAR_DECISION_API_KEY:}
+    base-url: ${AVATAR_DECISION_BASE_URL:}
+    model: ${AVATAR_DECISION_MODEL:qwen3.7-flash}
+    timeout-ms: ${AVATAR_DECISION_TIMEOUT_MS:1200}
+http:
+  okhttp:
+    max-idle-connections: 20
+    keep-alive-minutes: 5
+    connect-timeout-ms: 5000
+    read-timeout-ms: 30000
+    write-timeout-ms: 10000
+    max-requests: 64
+    max-requests-per-host: 32
+
+tencent:
+  credentials:
+    secret-id: ${TENCENT_SECRET_ID:}
+    secret-key: ${TENCENT_SECRET_KEY:}
+
+# API 鉴权：OpenID Connect JWT（本地 JWKS 验签 + iss + exp）
+api:
+  security:
+    issuer-uri: ${API_SECURITY_ISSUER_URI:}
+    jwk-set-uri: ${API_SECURITY_JWK_SET_URI:}
+    additional-issuer-uris: ${API_SECURITY_ADDITIONAL_ISSUER_URIS:}
+    clock-skew-seconds: ${API_SECURITY_CLOCK_SKEW_SECONDS:60}
+    # 演示旁路只作用于会话 HTTP 接口和 WebRTC 控制握手。
+    demo-token-enabled: ${API_SECURITY_DEMO_TOKEN_ENABLED:false}
+    demo-token: ${API_SECURITY_DEMO_TOKEN:}
+    demo-user-id: ${API_SECURITY_DEMO_USER_ID:demo-ue5}
+
+# HTTP 服务：端口与监听地址（0.0.0.0 表示网卡全绑定，便于局域网/容器访问）
+# 注意：不要用 server.servlet.context-path 做业务 API 前缀——会把 / 与 /actuator 一并挂到子路径下。
+# 业务 /api 由各 @RestController 类级 @RequestMapping 显式声明；版本经 X-Api-Version 请求头（单版本端点可省略）；根探活与 Actuator 保持无前缀。
+server:
+  port: 8080
+  address: 0.0.0.0
+  # K8s 滚动更新 / SIGTERM 时，等待 in-flight HTTP 结束后再关停 Tomcat
+  shutdown: graceful
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  compression:
+    enabled: true
+
+# Actuator：仅 health + Prometheus（不暴露 info；与业务共用 server.port；勿公网暴露 /actuator/prometheus）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      # 环境区分；勿用 spring.profiles.active 原样（可能为 prod,metrics）。可用 METRICS_ENV 覆盖。
+      env: ${METRICS_ENV:local}
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true

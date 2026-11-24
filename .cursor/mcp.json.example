@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bytebase/dbhub@latest",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "DSN": "postgresql://example_user:example_password@127.0.0.1:5432/example_db"
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+---
+description: 测试分层与命名规范
+globs: src/test/**/*.java
+alwaysApply: false
+---
+
+# 测试规范
+
+## 三层分工
+
+| 类型 | 注解 | 测什么 |
+|------|------|--------|
+| 单元测试 | `@ExtendWith(MockitoExtension.class)` | Service / support 逻辑；Mock 外部依赖 |
+| Controller 切片 | `@WebMvcTest` + `@Import(WebSecurityConfig, GlobalExceptionHandler, ApiResponseWriter)` | 鉴权通过后的映射与 JSON；Mock Service |
+| 集成测试 | `@SpringBootTest` + `@AutoConfigureMockMvc` + `@ActiveProfiles("test")` | Filter 401、请求体验证 400、全链路 wiring |
+
+**不要**把所有场景都堆在一个 `@SpringBootTest` 里；成功路径优先放 `@WebMvcTest`。
+
+## 复用
+
+- ConvoAI MockMvc 常量：`ConvoaiControllerTest` 中 `VALID_BEARER = "Bearer valid-token"`（配合 `@MockBean JwtDecoder`）、`AUTH_HEADER`。
+- 测试 profile 配置：`src/test/resources/application-test.yml`（含 `api.security.issuer-uri` / `jwk-set-uri`）。
+- Controller 切片需 `@Import(ResourceServerSecurityConfig.class)` 并 Mock `JwtDecoder`。
+
+## Service 单测要点
+
+- 配置缺失 → 断言 `ConfigurationException`（Mock `clientFactory.validateForJoin()` 或缺配置 Properties）。
+- join 成功 → Mock `AgoraRestClient` + `AgoraRtcTokenService`，断言返回 `ConvoaiJoinCredentials`（含 `agentId`、`userId` = JWT `sub`）。
+- leave 成功 → Mock `AgoraRestClient.leave`，断言 `LeaveConvoaiResult.status` = `STOPPED`。
+- 上游失败 → `UpstreamException` 透传。
+
+## 断言风格
+
+- `/api/**` 错误：`jsonPath("$.code")`、`jsonPath("$.success")`、`jsonPath("$.error.errors")`；鉴权头 `Authorization: Bearer <token>`。
+- ConvoAI join 成功：`$.data.appId`、`channel`、`token`、`userId`、`agentId`。
+- 用 `@DisplayName` 中文描述场景。
+
+## 完成前
+
+```bash
+mvn verify
+```
+
+新增/修改接口须补：Controller 切片 +（如需）IT 鉴权/校验 + Service 单测。

@@ -1,0 +1,21 @@
+#!/bin/sh
+# Same gate as CI: mvn validate -> spotless:check (see pom.xml).
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 1
+
+if [ -n "$MAVEN_HOME" ] && [ -x "$MAVEN_HOME/bin/mvn" ]; then
+  MVN="$MAVEN_HOME/bin/mvn"
+elif [ -x "$MAVEN_HOME/bin/mvn.cmd" ]; then
+  MVN="$MAVEN_HOME/bin/mvn.cmd"
+else
+  MVN="mvn"
+fi
+
+echo "pre-commit: spotless:check (same as CI validate)..."
+"$MVN" -q spotless:check || {
+  echo ""
+  echo "Spotless failed. Auto-fix: mvn spotless:apply"
+  echo "Then review, git add, and commit again."
+  exit 1
+}

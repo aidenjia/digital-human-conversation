@@ -1,0 +1,71 @@
+---
+description: API i18n via X-Api-Culture request header and content-language response header
+alwaysApply: false
+---
+# API Internationalization (i18n)
+
+Clients request a locale; servers localize user-facing strings and report the locale actually used.
+
+## Request header
+
+| Header           | Value   |
+|------------------|---------|
+| `X-Api-Culture`  | `<culture>` |
+
+Clients should set this on every request.
+
+```bash
+curl -X GET 'https://api.example.com/api/resource?PageNumber=1&PageSize=50' \
+  -H 'accept: */*' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'X-Api-Culture: en'
+```
+
+## Response header
+
+Servers must return the culture used to produce localized fields:
+
+| Header             | Value   |
+|--------------------|---------|
+| `content-language` | `<culture>` |
+
+If the requested culture is missing or unsupported, fall back to the server default and still set `content-language` to the culture actually applied.
+
+## Response example
+
+Localized string fields (e.g. `description`) reflect `content-language`:
+
+```json
+{
+  "data": [
+    {
+      "description": "图片2转3消费",
+      "spentAmount": 6.00,
+      "transactionDate": "2026-06-01T03:38:47.520686+00:00"
+    }
+  ],
+  "code": 200,
+  "success": true
+}
+```
+
+Response headers include: `content-language: zh`
+
+## Supported culture values
+
+Use ISO 639-1 language codes. Standard set:
+
+| Code | Language            |
+|------|---------------------|
+| `en` | English             |
+| `zh` | Simplified Chinese  |
+
+## Requirements
+
+**Clients**
+- Send `X-Api-Culture` when localized content is needed; omit only if the default locale is acceptable.
+
+**Servers**
+- Resolve culture from `X-Api-Culture`; validate against supported codes; default to `en` when absent or invalid.
+- Localize user-facing strings in responses; set `content-language` on every response that includes localized content.
+- Wire format is stack-agnostic (ASP.NET request localization, Spring `LocaleResolver`, FastAPI middleware, etc.).

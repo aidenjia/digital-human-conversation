@@ -1,0 +1,19 @@
+schema: superspec
+
+# Project context shown to AI when creating artifacts.
+context: |
+  Project: digital-human-conversation (Java 21, Spring Boot 3.5.x, Maven).
+  Packages under con.aidenjia.digitalhuman.conversation — see .cursor/rules/project-core.mdc
+  and java-api-convoai.mdc.
+  Current product scope: Agora ConvoAI HTTP gateway (POST/DELETE /api/convoai/agents).
+  Tests: mvn verify. Local profile: application-local.yml (tracked) + .env.local (not committed).
+  Client-facing API doc: docs/convoai-client-integration.md.
+  Legacy docs/superpowers/* and openspec/specs/trtc-* are historical (TRTC removed); new
+  ConvoAI capabilities should use kebab-case names like convoai-join-leave.
+  Superpowers plugin is installed in Cursor; use superpowers skills during apply phase.
+
+# Per-artifact rules (optional)
+# rules:
+#   proposal:
+#     - Keep proposals under 500 words
+#     - Always include a "Non-goals" section

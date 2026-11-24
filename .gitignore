@@ -1,0 +1,69 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Java
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+hs_err_pid*
+replay_pid*
+
+# Logs（历史 logback 文件输出目录；当前以 stdout 为主可保留忽略）
+logs/
+
+# Spring 本地私有配置
+/src/main/resources/application-local.yml
+/config/application-local.yml
+/application-local.yml
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.factorypath
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 本地环境文件与私钥
+.env
+.env.*
+!.env.example
+!/conversation-ui/.env.development
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Local dev smoke scripts (keep on machine only)
+scripts/
+
+# Cursor MCP（含数据库连接串，勿提交）
+.cursor/mcp.json
+
+
+# Generated motion assets and user task metadata
+/data/motion/
+
+# Local-only default VRM character (about 18 MB); keep setup instructions tracked.
+/conversation-ui/public/models/avatar-sample-2.vrm

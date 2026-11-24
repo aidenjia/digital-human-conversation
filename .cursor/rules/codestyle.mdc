@@ -1,0 +1,50 @@
+---
+description: Code Style 总览 — 三层机制（EditorConfig / Spotless / Cursor Rules）及团队修复指引
+alwaysApply: true
+---
+
+# Code Style
+
+项目通过 **三层机制** 统一代码风格。
+
+| 层级 | 载体 | 对象 | 触发方式 |
+|------|------|------|----------|
+| EditorConfig | [`.editorconfig`](../../.editorconfig) | 所有开发者 | IDE 自动读取 |
+| Spotless | `pom.xml` 中 `spotless-maven-plugin` | 开发者 + CI | `mvn validate` 自动 `check`，不通过构建失败 |
+| Cursor Rules | `.cursor/rules/*.mdc` | AI（Cursor Agent） | 对话中自动加载 |
+
+## 格式化规则（Spotless，勿手动调整）
+
+- Google Java Format AOSP 风格（4 空格缩进、大括号位置等）
+- 行宽 ≤ 100 字符
+- 自动删除未使用的 import
+- 移除行尾空格、文件末尾空行
+
+## 变更后必须执行
+
+```bash
+mvn spotless:apply    # 自动修复所有格式问题
+```
+
+**若 `apply` 后 `check` 仍失败**（罕见），手动调整再提交。
+
+## Cursor Rules 索引
+
+AI 在对话中自动遵循以下规则文件：
+
+| 文件 | 约束范围 |
+|------|---------|
+| `project-core.mdc` | 架构分层、依赖方向、Clean Code 纪律 |
+| `java-api-convoai.mdc` | Controller/Service 模板、DTO 位置、反模式 |
+| `application-logging.mdc` | 日志级别、MDC 字段、脱敏规则 |
+| `java-tests.mdc` | 测试三层分工、断言风格 |
+| `karpathy-guidelines.mdc` | AI 行为规范（简洁优先、外科手术式修改等 12 条） |
+
+**新增约束**：在此目录下添加 `.mdc` 文件，`alwaysApply: true` 或指定 `globs` 即可。
+
+## 禁止
+
+- 手调缩进 / 换行 → Spotless 会覆盖，产生无谓 diff
+- 提交前不跑 `mvn spotless:apply`
+- 注释掉的死代码留在文件中
+- 在 `.mdc` 规则文件中放入 token、密钥等敏感信息

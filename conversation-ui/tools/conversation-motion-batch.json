@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "provider": "TokenHub HY-3D-Motion",
+  "primaryTransport": "webrtc",
+  "enableRewrite": false,
+  "reuse": ["wave"],
+  "policy": "Generate all listed clips afresh. Exclude every other existing local FBX. Preview before admission.",
+  "motions": [
+    {
+      "name": "shake_head",
+      "label": "摇头否定",
+      "duration": 3,
+      "includeHead": true,
+      "prompt": "Stand with feet planted and arms relaxed. Gently shake the head no twice, then face forward and return to rest."
+    },
+    {
+      "name": "explain",
+      "label": "摊手解释",
+      "duration": 4,
+      "includeHead": false,
+      "prompt": "Stand with feet planted. Open both hands at waist height, palms up, gently explain, then lower both arms to rest."
+    },
+    {
+      "name": "point_self",
+      "label": "指向自己",
+      "duration": 3,
+      "includeHead": false,
+      "prompt": "Stand with feet planted. Bring the right hand toward the chest to indicate yourself, then lower the arm to rest."
+    },
+    {
+      "name": "think",
+      "label": "托腮思考",
+      "duration": 4,
+      "includeHead": true,
+      "prompt": "Stand with feet planted. Slowly raise the right hand near the chin in a thoughtful pose, pause, then return to rest."
+    },
+    {
+      "name": "shy",
+      "label": "害羞回避",
+      "duration": 4,
+      "includeHead": true,
+      "prompt": "Stand with feet planted. Tilt the head slightly down and aside shyly, draw the hands near the waist, then return to rest."
+    },
+    {
+      "name": "clap",
+      "label": "双手鼓掌",
+      "duration": 4,
+      "includeHead": false,
+      "prompt": "Stand with feet planted. Raise both hands in front of the chest, clap gently three times, then lower both arms to rest."
+    },
+    {
+      "name": "comfort",
+      "label": "手放心口安慰",
+      "duration": 4,
+      "includeHead": false,
+      "prompt": "Stand with feet planted. Rest the right hand lightly over the heart, lean forward slightly in reassurance, then return to rest."
+    },
+    {
+      "name": "shrug",
+      "label": "耸肩无奈",
+      "duration": 3,
+      "includeHead": false,
+      "prompt": "Stand with feet planted. Gently shrug both shoulders with elbows bent and palms up, pause, then lower both arms to rest."
+    }
+  ]
+}

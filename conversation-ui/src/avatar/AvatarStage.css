@@ -1,0 +1,15 @@
+.avatar-stage { width: 100%; max-width: 640px; margin: 0 auto 16px; border: 1px solid #e3e7f0; border-radius: 16px; overflow: hidden; flex-shrink: 0; background: #fafbff; }
+.avatar-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.avatar-stage button, .avatar-upload { border: 1px solid #dce1ed; background: white; border-radius: 8px; padding: 6px 10px; color: #38476a; font-size: 12px; cursor: pointer; }
+.avatar-stage button:disabled { opacity: 0.4; cursor: default; }
+.avatar-stage button:focus-visible, .avatar-upload:focus-within { outline: 2px solid #667eea; outline-offset: 2px; }
+.avatar-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.avatar-model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #63708b; }
+.avatar-canvas { height: clamp(320px, 44vh, 480px); touch-action: none; }
+.avatar-status, .avatar-notice { font-size: 12px; color: #63708b; padding: 10px 12px; line-height: 1.6; margin: 0; }
+.avatar-controls { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; }
+.realtime-main { overflow-y: auto; justify-content: flex-start; min-height: 0; }
+
+.avatar-toolbar { flex-wrap: wrap; }
+.avatar-quality { display: inline-flex; align-items: center; gap: 4px; color: #63708b; font-size: 12px; }
+.avatar-quality select { border: 1px solid #dce1ed; border-radius: 6px; padding: 4px; background: white; color: #38476a; }

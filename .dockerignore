@@ -1,0 +1,21 @@
+# Git / IDE
+.git
+.gitignore
+.cursor
+.idea
+*.iml
+.vscode
+
+# Build output（由镜像内 Maven 生成）
+# target/
+
+# Logs / local
+logs/
+*.log
+
+# OpenSpec / docs scratch（不参与应用构建）
+openspec/changes/**/archive/
+
+# OS
+Thumbs.db
+.DS_Store

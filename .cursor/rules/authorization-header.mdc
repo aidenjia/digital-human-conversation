@@ -1,0 +1,33 @@
+---
+description: Authenticated API endpoints must use Authorization Bearer header
+alwaysApply: false
+---
+# Authorization Header
+
+All endpoints that require authentication must accept the access token via the standard HTTP header:
+
+| Header          | Value              |
+|-----------------|--------------------|
+| `Authorization` | `Bearer <token>`   |
+
+`<token>` is the access token issued by the auth service (JWT or opaque token). There must be exactly one space between `Bearer` and the token.
+
+## Requirements
+
+**Clients**
+- Send `Authorization: Bearer <token>` on every request to a protected endpoint.
+- Do not pass bearer tokens in the query string, request body, or non-standard custom headers unless explicitly documented as an exception.
+
+**Servers**
+- Validate the `Authorization` header on protected routes; reject missing, malformed, or invalid tokens with `401 Unauthorized`.
+- Register auth middleware/filters/guards according to the stack (e.g. ASP.NET `[Authorize]`, Spring Security, FastAPI dependencies), but the wire format stays the same.
+
+## Example request
+
+```bash
+curl -X POST 'https://api.example.com/api/resource' \
+  -H 'accept: */*' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"key": "value"}'
+```

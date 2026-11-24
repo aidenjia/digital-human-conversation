@@ -1,0 +1,1 @@
+export const generateRandomUid = (): number => Math.floor(Math.random() * 1000000);
