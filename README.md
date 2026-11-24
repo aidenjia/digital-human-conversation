@@ -2,6 +2,41 @@
 
 数字人实时会话演示，包含 Java 21 / Spring Boot 3.5 后端和 React / Vite 前端。百炼 WebRTC 支持语音或文字输入、语音与字幕回复、打断和 VRM 数字人舞台。声网 ConvoAI 支持语音通话和 RTC 进房。
 
+## 架构与会话流程
+
+```mermaid
+flowchart TB
+    subgraph Browser["浏览器 · React / Vite"]
+        BailianUI["百炼会话页<br/>语音或文字输入 · 字幕 · VRM"]
+        AgoraUI["声网会话页<br/>Agora RTC SDK"]
+    end
+
+    subgraph Server["后端 · Spring Boot"]
+        Signaling["百炼信令<br/>鉴权 · SDP 交换 · 一次性控制票据"]
+        Control["百炼会话控制<br/>转写 · 文本输入 · 打断 · Avatar 决策"]
+        AgentAPI["声网会话管理<br/>鉴权 · 进房凭据 · Agent 归属"]
+    end
+
+    subgraph Cloud["云服务"]
+        Bailian["百炼实时模型"]
+        AgoraAgent["声网 ConvoAI Agent"]
+        AgoraRoom["声网 RTC 频道"]
+    end
+
+    BailianUI <-->|"HTTP · SDP Offer / Answer 与控制票据"| Signaling
+    Signaling <-->|"HTTP · SDP 交换"| Bailian
+    BailianUI <-->|"WebRTC RTP · 麦克风音频与语音回复"| Bailian
+    BailianUI <-->|"WebRTC DataChannel · 实时事件与模型指令"| Bailian
+    BailianUI <-->|"WebSocket · 上游事件转发、控制指令与字幕"| Control
+    AgoraUI <-->|"HTTP · 创建 / 结束会话与进房凭据"| AgentAPI
+    AgentAPI -->|"REST · 创建 / 停止 Agent"| AgoraAgent
+    AgoraUI <-->|"RTC · 发布麦克风与订阅回复"| AgoraRoom
+    AgoraAgent <-->|"RTC · 接收语音与发布回复"| AgoraRoom
+```
+
+- **百炼 WebRTC**。浏览器先通过后端交换 SDP 并取得控制票据，再连接控制 WebSocket、设置远端 SDP。浏览器将 DataChannel 事件转给后端，并把后端返回的模型指令写回 DataChannel。远端 RTP 音轨用于播放和驱动 VRM 口型，前端结合控制通道返回的决策调度动作。
+- **声网 ConvoAI**。后端创建 Agent 后返回进房凭据。浏览器用 RTC SDK 加入同一频道，发布麦克风并订阅 Agent 音频。结束会话时，后端校验 Agent 归属后调用声网接口停止 Agent。
+
 ## 快速开始
 
 需要 JDK 21、Maven、Node.js 24 和 npm。以下命令在 PowerShell 中运行。
